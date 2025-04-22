@@ -31,7 +31,7 @@ type
 implementation
 
 uses
-   System.Character, System.Rtti, System.SysUtils, System.TypInfo;
+  System.Character, System.Rtti, System.SysUtils, System.TypInfo;
 
 
 {$IFDEF DEBUG_AND_ASSERTS}
