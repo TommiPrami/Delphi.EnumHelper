@@ -23,6 +23,10 @@ uses
 
 class function TEnumHelper.EnumToInt<T>(const AEnumValue: T): Integer;
 begin
+{$IFDEF DEBUG}
+  Assert(TTypeInfo(TypeInfo(T)^).Kind = tkEnumeration, 'Only Enumeration type supported');
+{$ENDIF}
+
   Result := 0;
 
   Move(AEnumValue, Result, SizeOf(AEnumValue));
@@ -30,6 +34,10 @@ end;
 
 class function TEnumHelper.EnumToString<T>(const AEnumValue: T; const AStripLowercasePrefix: Boolean = False): string;
 begin
+{$IFDEF DEBUG}
+  Assert(TTypeInfo(TypeInfo(T)^).Kind = tkEnumeration, 'Only Enumeration type supported');
+{$ENDIF}
+
   Result := GetEnumName(TypeInfo(T), EnumToInt(AEnumValue));
 
   if AStripLowercasePrefix and not Result.IsEmpty then
@@ -55,6 +63,10 @@ var
   LMaxIntValue: Integer;
   LIntValue: Integer;
 begin
+{$IFDEF DEBUG}
+  Assert(TTypeInfo(TypeInfo(T)^).Kind = tkEnumeration, 'Only Enumeration type supported');
+{$ENDIF}
+
   LValueOfEnum := TValue.From(AEnumValue);
   LMaxIntValue := LValueOfEnum.TypeInfo.TypeData.MaxValue;
   LIntValue := LValueOfEnum.AsOrdinal;
@@ -81,6 +93,10 @@ var
   LMinIntValue: Integer;
   LIntValue: Integer;
 begin
+{$IFDEF DEBUG}
+  Assert(TTypeInfo(TypeInfo(T)^).Kind = tkEnumeration, 'Only Enumeration type supported');
+{$ENDIF}
+
   LValueOfEnum := TValue.From(AEnumValue);
   LMinIntValue := LValueOfEnum.TypeInfo.TypeData.MinValue;
   LIntValue := LValueOfEnum.AsOrdinal;
@@ -105,6 +121,10 @@ class function TEnumHelper.High<T>(const AEnumValue: T): T;
 var
   LValueOfEnum: TValue;
 begin
+{$IFDEF DEBUG}
+  Assert(TTypeInfo(TypeInfo(T)^).Kind = tkEnumeration, 'Only Enumeration type supported');
+{$ENDIF}
+
   LValueOfEnum := TValue.From(AEnumValue);
   LValueOfEnum := TValue.FromOrdinal(LValueOfEnum.TypeInfo, LValueOfEnum.TypeInfo.TypeData.MaxValue);
   Result := LValueOfEnum.AsType<T>;
@@ -114,6 +134,10 @@ class function TEnumHelper.Low<T>(const AEnumValue: T): T;
 var
   LValueOfEnum: TValue;
 begin
+{$IFDEF DEBUG}
+  Assert(TTypeInfo(TypeInfo(T)^).Kind = tkEnumeration, 'Only Enumeration type supported');
+{$ENDIF}
+
   LValueOfEnum := TValue.From(AEnumValue);
   LValueOfEnum := TValue.FromOrdinal(LValueOfEnum.TypeInfo, LValueOfEnum.TypeInfo.TypeData.MinValue);
   Result := LValueOfEnum.AsType<T>;
@@ -123,6 +147,10 @@ class function TEnumHelper.HighAsInteger<T>(const AEnumValue: T): Integer;
 var
   LValueOfEnum: TValue;
 begin
+{$IFDEF DEBUG}
+  Assert(TTypeInfo(TypeInfo(T)^).Kind = tkEnumeration, 'Only Enumeration type supported');
+{$ENDIF}
+
   LValueOfEnum := TValue.From(AEnumValue);
   Result := LValueOfEnum.TypeInfo.TypeData.MaxValue;
 end;
@@ -131,6 +159,10 @@ class function TEnumHelper.LowAsInteger<T>(const AEnumValue: T): Integer;
 var
   LValueOfEnum: TValue;
 begin
+{$IFDEF DEBUG}
+  Assert(TTypeInfo(TypeInfo(T)^).Kind = tkEnumeration, 'Only Enumeration type supported');
+{$ENDIF}
+
   LValueOfEnum := TValue.From(AEnumValue);
   Result := LValueOfEnum.TypeInfo.TypeData.MinValue;
 end;
