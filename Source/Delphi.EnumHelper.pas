@@ -20,15 +20,34 @@ type
     class function LowAsInteger<T>(const AEnumValue: T): Integer;
   end;
 
+{$IFDEF DEBUG}
+  {$IFOPT C-}
+  procedure DoNothing;
+  {$ENDIF}
+{$ENDIF}
+
 implementation
 
 uses
    System.Character, System.Rtti, System.SysUtils, System.TypInfo;
 
 {$IFDEF DEBUG}
-class procedure TEnumHelper.DoSanityCheck<T>(const AEnumValue: T);
+  {$IFOPT C-}
+procedure DoNothing;
+asm
+  nop
+end;
+  {$ENDIF}
+{$ENDIF}
+
+{$IFDEF DEBUG}
+class procedure TEnumHelper.DoSanityCheck<T>(const AEnumValue: T); //FI:O804 Parameter not used
 begin
-  Assert(TTypeInfo(TypeInfo(T)^).Kind = tkEnumeration, 'Only Enumeration type supported');
+  {$IFOPT C+}
+  Assert(TTypeInfo(TypeInfo(T)^).Kind = tkEnumeration, 'Only Enumeration types supported');
+  {$ELSE}
+  DoNothing;
+  {$ENDIF}
 end;
 {$ENDIF}
 
