@@ -2,11 +2,19 @@
 
 interface
 
+{$UNDEF DEBUG_AND_ASSERTS}
+
+{$IFDEF DEBUG}
+  {$IFOPT C+}
+    {$DEFINE DEBUG_AND_ASSERTS}
+  {$ENDIF}
+{$ENDIF}
+
   // Usage: LEnumNameStr := TEnumHelper.EnumToString(FormMain.BorderStyle);
 type
   TEnumHelper = class
   protected
-{$IFDEF DEBUG}
+{$IFDEF DEBUG_AND_ASSERTS}
     class procedure DoSanityCheck<T>(const AEnumValue: T);
 {$ENDIF}
   public
@@ -20,40 +28,22 @@ type
     class function LowAsInteger<T>(const AEnumValue: T): Integer;
   end;
 
-{$IFDEF DEBUG}
-  {$IFOPT C-}
-  procedure DoNothing;
-  {$ENDIF}
-{$ENDIF}
-
 implementation
 
 uses
    System.Character, System.Rtti, System.SysUtils, System.TypInfo;
 
-{$IFDEF DEBUG}
-  {$IFOPT C-}
-procedure DoNothing;
-asm
-  nop
-end;
-  {$ENDIF}
-{$ENDIF}
 
-{$IFDEF DEBUG}
-class procedure TEnumHelper.DoSanityCheck<T>(const AEnumValue: T); //FI:O804 Parameter not used
+{$IFDEF DEBUG_AND_ASSERTS}
+class procedure TEnumHelper.DoSanityCheck<T>(const AEnumValue: T);
 begin
-  {$IFOPT C+}
   Assert(TTypeInfo(TypeInfo(T)^).Kind = tkEnumeration, 'Only Enumeration types supported');
-  {$ELSE}
-  DoNothing;
-  {$ENDIF}
 end;
 {$ENDIF}
 
 class function TEnumHelper.EnumToInt<T>(const AEnumValue: T): Integer;
 begin
-{$IFDEF DEBUG}
+{$IFDEF DEBUG_AND_ASSERTS}
   DoSanityCheck(AEnumValue);
 {$ENDIF}
   Result := 0;
@@ -63,7 +53,7 @@ end;
 
 class function TEnumHelper.EnumToString<T>(const AEnumValue: T; const AStripLowercasePrefix: Boolean = False): string;
 begin
-{$IFDEF DEBUG}
+{$IFDEF DEBUG_AND_ASSERTS}
   DoSanityCheck(AEnumValue);
 {$ENDIF}
 
@@ -92,7 +82,7 @@ var
   LMaxIntValue: Integer;
   LIntValue: Integer;
 begin
-{$IFDEF DEBUG}
+{$IFDEF DEBUG_AND_ASSERTS}
   DoSanityCheck(AEnumValue);
 {$ENDIF}
 
@@ -122,7 +112,7 @@ var
   LMinIntValue: Integer;
   LIntValue: Integer;
 begin
-{$IFDEF DEBUG}
+{$IFDEF DEBUG_AND_ASSERTS}
   DoSanityCheck(AEnumValue);
 {$ENDIF}
 
@@ -150,7 +140,7 @@ class function TEnumHelper.High<T>(const AEnumValue: T): T;
 var
   LValueOfEnum: TValue;
 begin
-{$IFDEF DEBUG}
+{$IFDEF DEBUG_AND_ASSERTS}
   DoSanityCheck(AEnumValue);
 {$ENDIF}
 
@@ -163,7 +153,7 @@ class function TEnumHelper.Low<T>(const AEnumValue: T): T;
 var
   LValueOfEnum: TValue;
 begin
-{$IFDEF DEBUG}
+{$IFDEF DEBUG_AND_ASSERTS}
   DoSanityCheck(AEnumValue);
 {$ENDIF}
 
@@ -176,7 +166,7 @@ class function TEnumHelper.HighAsInteger<T>(const AEnumValue: T): Integer;
 var
   LValueOfEnum: TValue;
 begin
-{$IFDEF DEBUG}
+{$IFDEF DEBUG_AND_ASSERTS}
   DoSanityCheck(AEnumValue);
 {$ENDIF}
 
@@ -188,7 +178,7 @@ class function TEnumHelper.LowAsInteger<T>(const AEnumValue: T): Integer;
 var
   LValueOfEnum: TValue;
 begin
-{$IFDEF DEBUG}
+{$IFDEF DEBUG_AND_ASSERTS}
   DoSanityCheck(AEnumValue);
 {$ENDIF}
 
