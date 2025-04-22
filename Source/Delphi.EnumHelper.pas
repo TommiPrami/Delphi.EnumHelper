@@ -5,6 +5,10 @@ interface
   // Usage: LEnumNameStr := TEnumHelper.EnumToString(FormMain.BorderStyle);
 type
   TEnumHelper = class
+  protected
+{$IFDEF DEBUG}
+    class procedure DoSanityCheck<T>(const AEnumValue: T);
+{$ENDIF}
   public
     class function EnumToInt<T>(const AEnumValue: T): Integer;
     class function EnumToString<T>(const AEnumValue: T; const AStripLowercasePrefix: Boolean = False): string;
@@ -21,12 +25,18 @@ implementation
 uses
    System.Character, System.Rtti, System.SysUtils, System.TypInfo;
 
+{$IFDEF DEBUG}
+class procedure TEnumHelper.DoSanityCheck<T>(const AEnumValue: T);
+begin
+  Assert(TTypeInfo(TypeInfo(T)^).Kind = tkEnumeration, 'Only Enumeration type supported');
+end;
+{$ENDIF}
+
 class function TEnumHelper.EnumToInt<T>(const AEnumValue: T): Integer;
 begin
 {$IFDEF DEBUG}
-  Assert(TTypeInfo(TypeInfo(T)^).Kind = tkEnumeration, 'Only Enumeration type supported');
+  DoSanityCheck(AEnumValue);
 {$ENDIF}
-
   Result := 0;
 
   Move(AEnumValue, Result, SizeOf(AEnumValue));
@@ -35,7 +45,7 @@ end;
 class function TEnumHelper.EnumToString<T>(const AEnumValue: T; const AStripLowercasePrefix: Boolean = False): string;
 begin
 {$IFDEF DEBUG}
-  Assert(TTypeInfo(TypeInfo(T)^).Kind = tkEnumeration, 'Only Enumeration type supported');
+  DoSanityCheck(AEnumValue);
 {$ENDIF}
 
   Result := GetEnumName(TypeInfo(T), EnumToInt(AEnumValue));
@@ -64,7 +74,7 @@ var
   LIntValue: Integer;
 begin
 {$IFDEF DEBUG}
-  Assert(TTypeInfo(TypeInfo(T)^).Kind = tkEnumeration, 'Only Enumeration type supported');
+  DoSanityCheck(AEnumValue);
 {$ENDIF}
 
   LValueOfEnum := TValue.From(AEnumValue);
@@ -94,7 +104,7 @@ var
   LIntValue: Integer;
 begin
 {$IFDEF DEBUG}
-  Assert(TTypeInfo(TypeInfo(T)^).Kind = tkEnumeration, 'Only Enumeration type supported');
+  DoSanityCheck(AEnumValue);
 {$ENDIF}
 
   LValueOfEnum := TValue.From(AEnumValue);
@@ -122,7 +132,7 @@ var
   LValueOfEnum: TValue;
 begin
 {$IFDEF DEBUG}
-  Assert(TTypeInfo(TypeInfo(T)^).Kind = tkEnumeration, 'Only Enumeration type supported');
+  DoSanityCheck(AEnumValue);
 {$ENDIF}
 
   LValueOfEnum := TValue.From(AEnumValue);
@@ -135,7 +145,7 @@ var
   LValueOfEnum: TValue;
 begin
 {$IFDEF DEBUG}
-  Assert(TTypeInfo(TypeInfo(T)^).Kind = tkEnumeration, 'Only Enumeration type supported');
+  DoSanityCheck(AEnumValue);
 {$ENDIF}
 
   LValueOfEnum := TValue.From(AEnumValue);
@@ -148,7 +158,7 @@ var
   LValueOfEnum: TValue;
 begin
 {$IFDEF DEBUG}
-  Assert(TTypeInfo(TypeInfo(T)^).Kind = tkEnumeration, 'Only Enumeration type supported');
+  DoSanityCheck(AEnumValue);
 {$ENDIF}
 
   LValueOfEnum := TValue.From(AEnumValue);
@@ -160,7 +170,7 @@ var
   LValueOfEnum: TValue;
 begin
 {$IFDEF DEBUG}
-  Assert(TTypeInfo(TypeInfo(T)^).Kind = tkEnumeration, 'Only Enumeration type supported');
+  DoSanityCheck(AEnumValue);
 {$ENDIF}
 
   LValueOfEnum := TValue.From(AEnumValue);
