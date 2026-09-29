@@ -1,0 +1,41 @@
+# DPM package spec file
+min dpm client version: 1.0.0
+metadata:
+  id: VSoft.DUnitX
+  version: 0.5.1
+  description: Delphi Unit Testing Framework
+  authors:
+    - Vincent Parrett
+  projectUrl: https://github.com/VSoftTechnologies/DUnitX
+  repositoryUrl: https://github.com/VSoftTechnologies/DUnitX
+  repositoryCommit: #HASH#
+  license: Apache-2.0
+  copyright: Vincent Parrett and contributors
+  tags:
+    - unit testing
+    - dunitx
+    - dunit
+  readme: README.md
+variables:
+  packagesource: Rad Studio $compilernoprefix$
+targetPlatforms:
+  - compiler from: delphixe2
+    compiler to: delphi12.0
+    platforms:
+      - win32
+      - win64
+  - compiler: delphi13.0
+    platforms:
+      - win32
+      - win64
+      - winarm64ec
+templates:
+  - name: default
+    source:
+      - src: ./LICENSE.txt
+      - src: ./source/*.pas
+      - src: ./source/*.inc
+      - src: ./packages/$packageSource$/*.dpk
+      - src: ./packages/$packageSource$/*.dproj
+    build:
+      - project: ./packages/$packageSource$/VSoft.DUnitXWinR.dproj
