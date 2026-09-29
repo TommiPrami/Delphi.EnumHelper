@@ -3,7 +3,7 @@
 uses
   Vcl.Forms,
   Delphi.EnumHelper in '..\Delphi.EnumHelper.pas',
-  DEForm.DemoMain in 'Source\DEForm.DemoMain.pas' {DEDemoMainForm};
+  DEForm.DemoMain in 'DEForm.DemoMain.pas' {DEDemoMainForm};
 
 {$R *.res}
 
