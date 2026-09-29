@@ -83,3 +83,4 @@ __recovery/
 modules/
 *.dsv
 *dunitx-results.xml
+*TestInsightSettings.ini
