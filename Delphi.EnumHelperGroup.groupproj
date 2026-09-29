@@ -1,0 +1,48 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup>
+        <ProjectGuid>{FD0C3079-0650-43FD-B916-C4C990E6575C}</ProjectGuid>
+    </PropertyGroup>
+    <ItemGroup>
+        <Projects Include="Source\Demo\Delphi.EnumHelper.Demo.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="Source\UnitTests\Delphi.EnumHelper.UnitTests.dproj">
+            <Dependencies/>
+        </Projects>
+    </ItemGroup>
+    <ProjectExtensions>
+        <Borland.Personality>Default.Personality.12</Borland.Personality>
+        <Borland.ProjectType/>
+        <BorlandProject>
+            <Default.Personality/>
+        </BorlandProject>
+    </ProjectExtensions>
+    <Target Name="Delphi_EnumHelper_Demo">
+        <MSBuild Projects="Source\Demo\Delphi.EnumHelper.Demo.dproj"/>
+    </Target>
+    <Target Name="Delphi_EnumHelper_Demo:Clean">
+        <MSBuild Projects="Source\Demo\Delphi.EnumHelper.Demo.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="Delphi_EnumHelper_Demo:Make">
+        <MSBuild Projects="Source\Demo\Delphi.EnumHelper.Demo.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="Delphi_EnumHelper_UnitTests">
+        <MSBuild Projects="Source\UnitTests\Delphi.EnumHelper.UnitTests.dproj"/>
+    </Target>
+    <Target Name="Delphi_EnumHelper_UnitTests:Clean">
+        <MSBuild Projects="Source\UnitTests\Delphi.EnumHelper.UnitTests.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="Delphi_EnumHelper_UnitTests:Make">
+        <MSBuild Projects="Source\UnitTests\Delphi.EnumHelper.UnitTests.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="Build">
+        <CallTarget Targets="Delphi_EnumHelper_Demo;Delphi_EnumHelper_UnitTests"/>
+    </Target>
+    <Target Name="Clean">
+        <CallTarget Targets="Delphi_EnumHelper_Demo:Clean;Delphi_EnumHelper_UnitTests:Clean"/>
+    </Target>
+    <Target Name="Make">
+        <CallTarget Targets="Delphi_EnumHelper_Demo:Make;Delphi_EnumHelper_UnitTests:Make"/>
+    </Target>
+    <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
+</Project>

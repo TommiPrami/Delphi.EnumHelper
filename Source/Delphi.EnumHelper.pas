@@ -20,19 +20,20 @@ type
   public
     class function EnumToInt<T>(const AEnumValue: T): Integer;
     class function EnumToString<T>(const AEnumValue: T; const AStripLowercasePrefix: Boolean = False): string;
+    class function High<T>(const AEnumValue: T): T;
+    class function HighAsInteger<T>(const AEnumValue: T): Integer;
+    class function IntegerInRange<T>(const AEnumValue: T; const AIntegrValue: Integer): Boolean;
+    class function Low<T>(const AEnumValue: T): T;
+    class function LowAsInteger<T>(const AEnumValue: T): Integer;
     class function NextValue<T>(const AEnumValue: T): T;
     class function PreviousValue<T>(const AEnumValue: T): T;
-    class function High<T>(const AEnumValue: T): T;
-    class function Low<T>(const AEnumValue: T): T;
-    class function HighAsInteger<T>(const AEnumValue: T): Integer;
-    class function LowAsInteger<T>(const AEnumValue: T): Integer;
+    class procedure StringToEnum<T>(const AEnumString: string; var AEnumValue: T);
   end;
 
 implementation
 
 uses
-  System.Character, System.Rtti, System.SysUtils, System.TypInfo;
-
+  System.Character, System.Math, System.Rtti, System.SysUtils, System.TypInfo;
 
 {$IFDEF DEBUG_AND_ASSERTS}
 class procedure TEnumHelper.DoSanityCheck<T>(const AEnumValue: T);
@@ -61,25 +62,45 @@ begin
 
   if AStripLowercasePrefix and not Result.IsEmpty then
   begin
-    var LIndex: Integer := 0;
+    var LIndex: Integer := 1;
     var LResultLength := Length(Result);
 
-    while LIndex <= LResultLength do
-    begin
+    while (LIndex <= LResultLength) and Result[LIndex].IsLower do
       Inc(LIndex);
 
-      if not Result[LIndex].IsLower then
-        Break;
-    end;
-
-    Result := Copy(Result, LIndex, LResultLength);
+    // All lowercase name has no prefix to strip
+    if LIndex <= LResultLength then
+      Result := Copy(Result, LIndex, LResultLength);
   end;
 end;
 
+class procedure TEnumHelper.StringToEnum<T>(const AEnumString: string; var AEnumValue: T);
+var 
+  LTYpeInfo: Pointer;
+  LEnumValue: Integer;
+  PEnumTemp: Pointer;
+begin
+{$IFDEF DEBUG_AND_ASSERTS}
+  DoSanityCheck(AEnumValue);
+{$ENDIF}
+
+  LTYpeInfo := TypeInfo(T);
+  LEnumValue:= GetEnumValue(LTYpeInfo, AEnumString);
+
+  // GetEnumValue returns -1 for unknown names, and names of the base type for subranges
+  if not InRange(LEnumValue, GetTypeData(LTYpeInfo).MinValue, GetTypeData(LTYpeInfo).MaxValue) then
+    raise EArgumentException.CreateFmt('"%s" is not a valid value of %s', [AEnumString, GetTypeName(LTYpeInfo)]);
+
+  PEnumTemp := @LEnumValue;
+
+  AEnumValue :=  T(PEnumTemp^);
+end;
+
+// Stops at High, out of range values are clamped between Low and High
 class function TEnumHelper.NextValue<T>(const AEnumValue: T): T;
 var
   LValueOfEnum: TValue;
-  LMaxIntValue: Integer;
+  LTypeData: PTypeData;
   LIntValue: Integer;
 begin
 {$IFDEF DEBUG_AND_ASSERTS}
@@ -87,29 +108,17 @@ begin
 {$ENDIF}
 
   LValueOfEnum := TValue.From(AEnumValue);
-  LMaxIntValue := LValueOfEnum.TypeInfo.TypeData.MaxValue;
-  LIntValue := LValueOfEnum.AsOrdinal;
+  LTypeData := LValueOfEnum.TypeInfo.TypeData;
+  LIntValue := EnsureRange(LValueOfEnum.AsOrdinal + 1, LTypeData.MinValue, LTypeData.MaxValue);
 
-  if LIntValue = LMaxIntValue then
-    Result := AEnumValue
-  else if LIntValue > LMaxIntValue then
-  begin
-    LValueOfEnum := TValue.FromOrdinal(LValueOfEnum.TypeInfo, LMaxIntValue);
-    Result := LValueOfEnum.AsType<T>;
-  end
-  else
-  begin
-    Inc(LIntValue);
-
-    LValueOfEnum := TValue.FromOrdinal(LValueOfEnum.TypeInfo, LIntValue);
-    Result := LValueOfEnum.AsType<T>;
-  end;
+  Result := TValue.FromOrdinal(LValueOfEnum.TypeInfo, LIntValue).AsType<T>;
 end;
 
+// Stops at Low, out of range values are clamped between Low and High
 class function TEnumHelper.PreviousValue<T>(const AEnumValue: T): T;
 var
   LValueOfEnum: TValue;
-  LMinIntValue: Integer;
+  LTypeData: PTypeData;
   LIntValue: Integer;
 begin
 {$IFDEF DEBUG_AND_ASSERTS}
@@ -117,23 +126,10 @@ begin
 {$ENDIF}
 
   LValueOfEnum := TValue.From(AEnumValue);
-  LMinIntValue := LValueOfEnum.TypeInfo.TypeData.MinValue;
-  LIntValue := LValueOfEnum.AsOrdinal;
+  LTypeData := LValueOfEnum.TypeInfo.TypeData;
+  LIntValue := EnsureRange(LValueOfEnum.AsOrdinal - 1, LTypeData.MinValue, LTypeData.MaxValue);
 
-  if LIntValue = LMinIntValue then
-    Result := AEnumValue
-  else if LIntValue < LMinIntValue then
-  begin
-    LValueOfEnum := TValue.FromOrdinal(LValueOfEnum.TypeInfo, LMinIntValue);
-    Result := LValueOfEnum.AsType<T>;
-  end
-  else
-  begin
-    Dec(LIntValue);
-
-    LValueOfEnum := TValue.FromOrdinal(LValueOfEnum.TypeInfo, LIntValue);
-    Result := LValueOfEnum.AsType<T>;
-  end;
+  Result := TValue.FromOrdinal(LValueOfEnum.TypeInfo, LIntValue).AsType<T>;
 end;
 
 class function TEnumHelper.High<T>(const AEnumValue: T): T;
@@ -172,6 +168,11 @@ begin
 
   LValueOfEnum := TValue.From(AEnumValue);
   Result := LValueOfEnum.TypeInfo.TypeData.MaxValue;
+end;
+
+class function TEnumHelper.IntegerInRange<T>(const AEnumValue: T; const AIntegrValue: Integer): Boolean;
+begin
+  Result := InRange(AIntegrValue, LowAsInteger(AEnumValue), HighAsInteger(AEnumValue));
 end;
 
 class function TEnumHelper.LowAsInteger<T>(const AEnumValue: T): Integer;
