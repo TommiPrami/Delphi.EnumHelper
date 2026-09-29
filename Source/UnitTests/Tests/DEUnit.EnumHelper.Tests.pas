@@ -306,12 +306,174 @@ type
     procedure StringToEnumThroughLocalVariable;
   end;
 
+  // Count, Names and Values
+  [TestFixture]
+  TEnumHelperCountNamesValuesTests = class
+  public
+    [Test]
+    procedure CountOfTypes;
+    [Test]
+    procedure NamesFull;
+    [Test]
+    procedure NamesMatchEnumToString;
+    [Test]
+    procedure NamesStripped;
+    [Test]
+    procedure NamesSubRange;
+    [Test]
+    procedure NoRttiRaises;
+    [Test]
+    procedure ValuesForIn;
+    [Test]
+    procedure ValuesInOrder;
+    [Test]
+    procedure ValuesSubRange;
+  end;
+
+  // Type level High, Low, HighAsInteger, LowAsInteger and IntegerInRange, no value needed
+  [TestFixture]
+  TEnumHelperTypeOnlyTests = class
+  public
+    [Test]
+    procedure HighAndLow;
+    [Test]
+    procedure HighAndLowAsInteger;
+    [Test]
+    [TestCase('Below low', '-1,False')]
+    [TestCase('Low', '0,True')]
+    [TestCase('High', '4,True')]
+    [TestCase('Above high', '5,False')]
+    procedure IntegerInRange(const AValue: Integer; const AExpected: Boolean);
+    [Test]
+    procedure MatchValueVersions;
+    [Test]
+    procedure SubRange;
+  end;
+
+  [TestFixture]
+  TEnumHelperIntegerToEnumTests = class
+  public
+    [Test]
+    procedure AllValues;
+    [Test]
+    procedure OutOfRangeRaises;
+    [Test]
+    procedure SubRange;
+    [Test]
+    procedure TryInvalidReturnsFalseAndLow;
+    [Test]
+    procedure TryValid;
+    [Test]
+    procedure WordEnum;
+  end;
+
+  [TestFixture]
+  TEnumHelperIsValidTests = class
+  public
+    [Test]
+    procedure AllValuesValid;
+    [Test]
+    procedure BelowSubRangeInvalid;
+    [Test]
+    procedure OutOfRangeCastInvalid;
+    [Test]
+    procedure WordEnum;
+  end;
+
+  [TestFixture]
+  TEnumHelperWrapTests = class
+  public
+    [Test]
+    procedure BooleanType;
+    [Test]
+    procedure FullCycleBackward;
+    [Test]
+    procedure FullCycleForward;
+    [Test]
+    procedure NextInMiddle;
+    [Test]
+    procedure NextWrapsHighToLow;
+    [Test]
+    procedure OutOfRangeContinues;
+    [Test]
+    procedure PreviousInMiddle;
+    [Test]
+    procedure PreviousWrapsLowToHigh;
+    [Test]
+    procedure SingleValue;
+    [Test]
+    procedure SubRangeWrapsInsideSubRange;
+  end;
+
+  // TryStringToEnum, StringToEnumDef, and stripped names with AAllowStrippedName
+  [TestFixture]
+  TEnumHelperTryStringToEnumTests = class
+  public
+    [Test]
+    procedure DefInvalidGivesDefault;
+    [Test]
+    procedure DefToProperty;
+    [Test]
+    procedure DefValid;
+    [Test]
+    procedure StrippedAmbiguousNotAccepted;
+    [Test]
+    procedure StrippedCaseInsensitive;
+    [Test]
+    procedure StrippedName;
+    [Test]
+    procedure StrippedNameNeedsFlag;
+    [Test]
+    procedure StrippedOutsideSubRange;
+    [Test]
+    procedure StrippedWithDef;
+    [Test]
+    procedure TryInvalidReturnsFalseAndLow;
+    [Test]
+    procedure TryNoRttiRaises;
+    [Test]
+    procedure TrySubRangeInvalidGivesSubRangeLow;
+    [Test]
+    procedure TryValid;
+  end;
+
+  [TestFixture]
+  TEnumHelperSetTests = class
+  public
+    [Test]
+    procedure ByteFullSetRoundTrip;
+    [Test]
+    procedure EmptySet;
+    [Test]
+    procedure NoRttiElementsRaise;
+    [Test]
+    procedure RoundTripAllSubsets;
+    [Test]
+    procedure SetToStringBrackets;
+    [Test]
+    procedure SetToStringValues;
+    [Test]
+    procedure StringToSetCaseInsensitive;
+    [Test]
+    procedure StringToSetInvalidRaises;
+    [Test]
+    procedure StringToSetSpacesAndBrackets;
+    [Test]
+    procedure SubRangeSetRejectsBaseTypeName;
+    [Test]
+    procedure SystemShiftState;
+    [Test]
+    procedure TryInvalidReturnsFalseAndEmpty;
+  end;
+
 {$IF DEFINED(DEBUG)}
   {$IFOPT C+}
   // TEnumHelper asserts that T is an enumeration only in DEBUG builds with assertions on
   [TestFixture]
   TEnumHelperSanityCheckTests = class
   public
+    [Test]
+    procedure CountRejectsInteger;
     [Test]
     procedure EnumToIntRejectsInteger;
     [Test]
@@ -332,6 +494,8 @@ type
     procedure NextValueRejectsInteger;
     [Test]
     procedure PreviousValueRejectsInteger;
+    [Test]
+    procedure SetToStringRejectsEnum;
     [Test]
     procedure StringToEnumRejectsInteger;
   end;
@@ -1645,9 +1809,671 @@ begin
   Assert.AreEqual('bsToolWindow', GetEnumProp(FWindow, 'BorderStyle'));
 end;
 
+{ TEnumHelperCountNamesValuesTests }
+
+procedure TEnumHelperCountNamesValuesTests.CountOfTypes;
+begin
+  Assert.AreEqual(5, TEnumHelper.Count<TTestColor>);
+  Assert.AreEqual(3, TEnumHelper.Count<TTestColorSubRange>);
+  Assert.AreEqual(1, TEnumHelper.Count<TTestSingle>);
+  Assert.AreEqual(4, TEnumHelper.Count<TTestFourBytes>);
+  Assert.AreEqual(256, TEnumHelper.Count<TTestByteFull>);
+  Assert.AreEqual(300, TEnumHelper.Count<TTestWord>);
+  Assert.AreEqual(2, TEnumHelper.Count<Boolean>);
+end;
+
+procedure TEnumHelperCountNamesValuesTests.NamesFull;
+begin
+  Assert.AreEqual('tcRed,tcGreen,tcBlue,tcYellow,tcBlack', string.Join(',', TEnumHelper.Names<TTestColor>));
+  Assert.AreEqual('False,True', string.Join(',', TEnumHelper.Names<Boolean>));
+  Assert.AreEqual('First,Second,Third', string.Join(',', TEnumHelper.Names<TTestScoped>));
+end;
+
+procedure TEnumHelperCountNamesValuesTests.NamesMatchEnumToString;
+var
+  LNames: TArray<string>;
+  LStrippedNames: TArray<string>;
+  LValue: TTestWord;
+begin
+  LNames := TEnumHelper.Names<TTestWord>;
+  LStrippedNames := TEnumHelper.Names<TTestWord>(True);
+
+  Assert.AreEqual(300, Integer(Length(LNames)));
+
+  for LValue := System.Low(TTestWord) to System.High(TTestWord) do
+  begin
+    Assert.AreEqual(TEnumHelper.EnumToString(LValue), LNames[Ord(LValue)]);
+    Assert.AreEqual(TEnumHelper.EnumToString(LValue, True), LStrippedNames[Ord(LValue)]);
+  end;
+end;
+
+procedure TEnumHelperCountNamesValuesTests.NamesStripped;
+begin
+  Assert.AreEqual('Red,Green,Blue,Yellow,Black', string.Join(',', TEnumHelper.Names<TTestColor>(True)));
+  Assert.AreEqual('None,Single,Sizeable,Dialog,ToolWindow,SizeToolWin',
+    string.Join(',', TEnumHelper.Names<TTestBorderStyle>(True)));
+  Assert.AreEqual('lowerone,lowertwo', string.Join(',', TEnumHelper.Names<TTestAllLowercase>(True)));
+  Assert.AreEqual('Äiti,Öljy,Å', string.Join(',', TEnumHelper.Names<TTestUnicode>(True)));
+end;
+
+procedure TEnumHelperCountNamesValuesTests.NamesSubRange;
+begin
+  Assert.AreEqual('tcGreen,tcBlue,tcYellow', string.Join(',', TEnumHelper.Names<TTestColorSubRange>));
+  Assert.AreEqual('Green,Blue,Yellow', string.Join(',', TEnumHelper.Names<TTestColorSubRange>(True)));
+end;
+
+procedure TEnumHelperCountNamesValuesTests.NoRttiRaises;
+begin
+  Assert.WillRaise(
+    procedure
+    begin
+      TEnumHelper.Count<TEnumWithAssignedValues>;
+    end,
+    ENotSupportedException);
+
+  Assert.WillRaise(
+    procedure
+    begin
+      TEnumHelper.Names<TEnumWithAssignedValues>;
+    end,
+    ENotSupportedException);
+
+  Assert.WillRaise(
+    procedure
+    begin
+      TEnumHelper.Values<TEnumWithAssignedValues>;
+    end,
+    ENotSupportedException);
+end;
+
+procedure TEnumHelperCountNamesValuesTests.ValuesForIn;
+var
+  LExpectedOrdinal: Integer;
+  LValue: TTestWord;
+begin
+  LExpectedOrdinal := 0;
+
+  for LValue in TEnumHelper.Values<TTestWord> do
+  begin
+    Assert.AreEqual(LExpectedOrdinal, Integer(Ord(LValue)));
+
+    Inc(LExpectedOrdinal);
+  end;
+
+  Assert.AreEqual(300, LExpectedOrdinal);
+end;
+
+procedure TEnumHelperCountNamesValuesTests.ValuesInOrder;
+var
+  LValues: TArray<TTestColor>;
+begin
+  LValues := TEnumHelper.Values<TTestColor>;
+
+  Assert.AreEqual(5, Integer(Length(LValues)));
+  Assert.AreEqual<TTestColor>(tcRed, LValues[0]);
+  Assert.AreEqual<TTestColor>(tcGreen, LValues[1]);
+  Assert.AreEqual<TTestColor>(tcBlue, LValues[2]);
+  Assert.AreEqual<TTestColor>(tcYellow, LValues[3]);
+  Assert.AreEqual<TTestColor>(tcBlack, LValues[4]);
+
+  Assert.AreEqual(2, Integer(Length(TEnumHelper.Values<Boolean>)));
+  Assert.AreEqual<TTestFourBytes>(fbThree, TEnumHelper.Values<TTestFourBytes>[3]);
+end;
+
+procedure TEnumHelperCountNamesValuesTests.ValuesSubRange;
+var
+  LValues: TArray<TTestColorSubRange>;
+begin
+  LValues := TEnumHelper.Values<TTestColorSubRange>;
+
+  Assert.AreEqual(3, Integer(Length(LValues)));
+  Assert.AreEqual<TTestColorSubRange>(tcGreen, LValues[0]);
+  Assert.AreEqual<TTestColorSubRange>(tcYellow, LValues[2]);
+end;
+
+{ TEnumHelperTypeOnlyTests }
+
+procedure TEnumHelperTypeOnlyTests.HighAndLow;
+begin
+  Assert.AreEqual<TTestColor>(tcBlack, TEnumHelper.High<TTestColor>);
+  Assert.AreEqual<TTestColor>(tcRed, TEnumHelper.Low<TTestColor>);
+  Assert.AreEqual<TTestWord>(w299, TEnumHelper.High<TTestWord>);
+  Assert.AreEqual<TTestFourBytes>(fbThree, TEnumHelper.High<TTestFourBytes>);
+  Assert.AreEqual<Boolean>(True, TEnumHelper.High<Boolean>);
+end;
+
+procedure TEnumHelperTypeOnlyTests.HighAndLowAsInteger;
+begin
+  Assert.AreEqual(4, TEnumHelper.HighAsInteger<TTestColor>);
+  Assert.AreEqual(0, TEnumHelper.LowAsInteger<TTestColor>);
+  Assert.AreEqual(255, TEnumHelper.HighAsInteger<TTestByteFull>);
+  Assert.AreEqual(299, TEnumHelper.HighAsInteger<TTestWord>);
+end;
+
+procedure TEnumHelperTypeOnlyTests.IntegerInRange(const AValue: Integer; const AExpected: Boolean);
+begin
+  Assert.AreEqual<Boolean>(AExpected, TEnumHelper.IntegerInRange<TTestColor>(AValue));
+end;
+
+procedure TEnumHelperTypeOnlyTests.MatchValueVersions;
+begin
+  Assert.AreEqual<TTestBorderStyle>(TEnumHelper.High(bsDialog), TEnumHelper.High<TTestBorderStyle>);
+  Assert.AreEqual<TTestBorderStyle>(TEnumHelper.Low(bsDialog), TEnumHelper.Low<TTestBorderStyle>);
+  Assert.AreEqual(TEnumHelper.HighAsInteger(bsDialog), TEnumHelper.HighAsInteger<TTestBorderStyle>);
+  Assert.AreEqual(TEnumHelper.LowAsInteger(bsDialog), TEnumHelper.LowAsInteger<TTestBorderStyle>);
+  Assert.AreEqual(TEnumHelper.IntegerInRange(bsDialog, 5), TEnumHelper.IntegerInRange<TTestBorderStyle>(5));
+end;
+
+procedure TEnumHelperTypeOnlyTests.SubRange;
+begin
+  Assert.AreEqual<TTestColorSubRange>(tcYellow, TEnumHelper.High<TTestColorSubRange>);
+  Assert.AreEqual<TTestColorSubRange>(tcGreen, TEnumHelper.Low<TTestColorSubRange>);
+  Assert.AreEqual(3, TEnumHelper.HighAsInteger<TTestColorSubRange>);
+  Assert.AreEqual(1, TEnumHelper.LowAsInteger<TTestColorSubRange>);
+  Assert.IsFalse(TEnumHelper.IntegerInRange<TTestColorSubRange>(0));
+  Assert.IsTrue(TEnumHelper.IntegerInRange<TTestColorSubRange>(1));
+end;
+
+{ TEnumHelperIntegerToEnumTests }
+
+procedure TEnumHelperIntegerToEnumTests.AllValues;
+var
+  LOrdinal: Integer;
+begin
+  for LOrdinal := 0 to 4 do
+    Assert.AreEqual(LOrdinal, TEnumHelper.EnumToInt(TEnumHelper.IntegerToEnum<TTestColor>(LOrdinal)));
+end;
+
+procedure TEnumHelperIntegerToEnumTests.OutOfRangeRaises;
+begin
+  Assert.WillRaiseWithMessage(
+    procedure
+    begin
+      TEnumHelper.IntegerToEnum<TTestColor>(5);
+    end,
+    EArgumentOutOfRangeException,
+    '5 is not a valid ordinal of TTestColor');
+
+  Assert.WillRaise(
+    procedure
+    begin
+      TEnumHelper.IntegerToEnum<TTestColor>(-1);
+    end,
+    EArgumentOutOfRangeException);
+end;
+
+procedure TEnumHelperIntegerToEnumTests.SubRange;
+begin
+  Assert.AreEqual<TTestColorSubRange>(tcGreen, TEnumHelper.IntegerToEnum<TTestColorSubRange>(1));
+  Assert.AreEqual<TTestColorSubRange>(tcYellow, TEnumHelper.IntegerToEnum<TTestColorSubRange>(3));
+
+  Assert.WillRaise(
+    procedure
+    begin
+      TEnumHelper.IntegerToEnum<TTestColorSubRange>(0);
+    end,
+    EArgumentOutOfRangeException);
+end;
+
+procedure TEnumHelperIntegerToEnumTests.TryInvalidReturnsFalseAndLow;
+var
+  LColor: TTestColor;
+  LSubRange: TTestColorSubRange;
+begin
+  LColor := tcBlack;
+  Assert.IsFalse(TEnumHelper.TryIntegerToEnum<TTestColor>(7, LColor));
+  Assert.AreEqual<TTestColor>(tcRed, LColor);
+
+  LSubRange := tcYellow;
+  Assert.IsFalse(TEnumHelper.TryIntegerToEnum<TTestColorSubRange>(0, LSubRange));
+  Assert.AreEqual<TTestColorSubRange>(tcGreen, LSubRange);
+end;
+
+procedure TEnumHelperIntegerToEnumTests.TryValid;
+var
+  LColor: TTestColor;
+begin
+  Assert.IsTrue(TEnumHelper.TryIntegerToEnum<TTestColor>(3, LColor));
+  Assert.AreEqual<TTestColor>(tcYellow, LColor);
+end;
+
+procedure TEnumHelperIntegerToEnumTests.WordEnum;
+begin
+  Assert.AreEqual<TTestWord>(w256, TEnumHelper.IntegerToEnum<TTestWord>(256));
+  Assert.AreEqual<TTestWord>(w299, TEnumHelper.IntegerToEnum<TTestWord>(299));
+  Assert.AreEqual<TTestFourBytes>(fbThree, TEnumHelper.IntegerToEnum<TTestFourBytes>(3));
+end;
+
+{ TEnumHelperIsValidTests }
+
+procedure TEnumHelperIsValidTests.AllValuesValid;
+var
+  LValue: TTestColor;
+begin
+  for LValue := System.Low(TTestColor) to System.High(TTestColor) do
+    Assert.IsTrue(TEnumHelper.IsValid(LValue));
+
+  Assert.IsTrue(TEnumHelper.IsValid(True));
+  Assert.IsTrue(TEnumHelper.IsValid(fbThree));
+end;
+
+procedure TEnumHelperIsValidTests.BelowSubRangeInvalid;
+var
+  LOrdinal: Integer;
+  LValue: TTestColorSubRange;
+begin
+  LOrdinal := Ord(tcRed);
+  LValue := TTestColorSubRange(LOrdinal);
+
+  Assert.IsFalse(TEnumHelper.IsValid<TTestColorSubRange>(LValue));
+end;
+
+procedure TEnumHelperIsValidTests.OutOfRangeCastInvalid;
+var
+  LOrdinal: Integer;
+  LValue: TTestColor;
+begin
+  LOrdinal := 200;
+  LValue := TTestColor(LOrdinal);
+
+  Assert.IsFalse(TEnumHelper.IsValid(LValue));
+end;
+
+procedure TEnumHelperIsValidTests.WordEnum;
+var
+  LOrdinal: Integer;
+  LValue: TTestWord;
+begin
+  Assert.IsTrue(TEnumHelper.IsValid(w299));
+
+  LOrdinal := 300;
+  LValue := TTestWord(LOrdinal);
+
+  Assert.IsFalse(TEnumHelper.IsValid(LValue));
+end;
+
+{ TEnumHelperWrapTests }
+
+procedure TEnumHelperWrapTests.BooleanType;
+begin
+  Assert.AreEqual<Boolean>(False, TEnumHelper.NextValueWrap(True));
+  Assert.AreEqual<Boolean>(True, TEnumHelper.PreviousValueWrap(False));
+end;
+
+procedure TEnumHelperWrapTests.FullCycleBackward;
+var
+  LIndex: Integer;
+  LValue: TTestWord;
+begin
+  LValue := w100;
+
+  for LIndex := 1 to TEnumHelper.Count<TTestWord> do
+    LValue := TEnumHelper.PreviousValueWrap(LValue);
+
+  Assert.AreEqual<TTestWord>(w100, LValue);
+end;
+
+procedure TEnumHelperWrapTests.FullCycleForward;
+var
+  LIndex: Integer;
+  LValue: TTestColor;
+begin
+  LValue := tcBlue;
+
+  for LIndex := 1 to TEnumHelper.Count<TTestColor> do
+    LValue := TEnumHelper.NextValueWrap(LValue);
+
+  Assert.AreEqual<TTestColor>(tcBlue, LValue);
+end;
+
+procedure TEnumHelperWrapTests.NextInMiddle;
+begin
+  Assert.AreEqual<TTestColor>(tcGreen, TEnumHelper.NextValueWrap(tcRed));
+  Assert.AreEqual<TTestWord>(w256, TEnumHelper.NextValueWrap(w255));
+end;
+
+procedure TEnumHelperWrapTests.NextWrapsHighToLow;
+begin
+  Assert.AreEqual<TTestColor>(tcRed, TEnumHelper.NextValueWrap(tcBlack));
+  Assert.AreEqual<TTestByteFull>(e000, TEnumHelper.NextValueWrap(e255));
+  Assert.AreEqual<TTestFourBytes>(fbZero, TEnumHelper.NextValueWrap(fbThree));
+end;
+
+procedure TEnumHelperWrapTests.OutOfRangeContinues;
+var
+  LOrdinal: Integer;
+  LValue: TTestColor;
+begin
+  LOrdinal := 200;
+  LValue := TTestColor(LOrdinal);
+
+  Assert.AreEqual<TTestColor>(tcRed, TEnumHelper.NextValueWrap(LValue));
+  Assert.AreEqual<TTestColor>(tcBlack, TEnumHelper.PreviousValueWrap(LValue));
+end;
+
+procedure TEnumHelperWrapTests.PreviousInMiddle;
+begin
+  Assert.AreEqual<TTestColor>(tcYellow, TEnumHelper.PreviousValueWrap(tcBlack));
+  Assert.AreEqual<TTestWord>(w255, TEnumHelper.PreviousValueWrap(w256));
+end;
+
+procedure TEnumHelperWrapTests.PreviousWrapsLowToHigh;
+begin
+  Assert.AreEqual<TTestColor>(tcBlack, TEnumHelper.PreviousValueWrap(tcRed));
+  Assert.AreEqual<TTestWord>(w299, TEnumHelper.PreviousValueWrap(w000));
+end;
+
+procedure TEnumHelperWrapTests.SingleValue;
+begin
+  Assert.AreEqual<TTestSingle>(tsOnly, TEnumHelper.NextValueWrap(tsOnly));
+  Assert.AreEqual<TTestSingle>(tsOnly, TEnumHelper.PreviousValueWrap(tsOnly));
+end;
+
+procedure TEnumHelperWrapTests.SubRangeWrapsInsideSubRange;
+var
+  LValue: TTestColorSubRange;
+begin
+  LValue := tcYellow;
+  Assert.AreEqual<TTestColorSubRange>(tcGreen, TEnumHelper.NextValueWrap<TTestColorSubRange>(LValue));
+
+  LValue := tcGreen;
+  Assert.AreEqual<TTestColorSubRange>(tcYellow, TEnumHelper.PreviousValueWrap<TTestColorSubRange>(LValue));
+end;
+
+{ TEnumHelperTryStringToEnumTests }
+
+procedure TEnumHelperTryStringToEnumTests.DefInvalidGivesDefault;
+begin
+  Assert.AreEqual<TTestColor>(tcYellow, TEnumHelper.StringToEnumDef('NotAValue', tcYellow));
+  Assert.AreEqual<TTestColor>(tcYellow, TEnumHelper.StringToEnumDef('', tcYellow));
+end;
+
+// The function form works with properties directly, StringToEnum needs a local variable for them
+procedure TEnumHelperTryStringToEnumTests.DefToProperty;
+var
+  LWindow: TTestWindow;
+begin
+  LWindow := TTestWindow.Create;
+  try
+    LWindow.BorderStyle := TEnumHelper.StringToEnumDef('bsDialog', LWindow.BorderStyle);
+    Assert.AreEqual<TTestBorderStyle>(bsDialog, LWindow.BorderStyle);
+
+    LWindow.BorderStyle := TEnumHelper.StringToEnumDef('bsHuge', LWindow.BorderStyle);
+    Assert.AreEqual<TTestBorderStyle>(bsDialog, LWindow.BorderStyle);
+  finally
+    LWindow.Free;
+  end;
+end;
+
+procedure TEnumHelperTryStringToEnumTests.DefValid;
+begin
+  Assert.AreEqual<TTestColor>(tcBlue, TEnumHelper.StringToEnumDef('tcBlue', tcYellow));
+  Assert.AreEqual<TTestWord>(w299, TEnumHelper.StringToEnumDef('w299', w000));
+end;
+
+procedure TEnumHelperTryStringToEnumTests.StrippedAmbiguousNotAccepted;
+var
+  LValue: TTestAmbiguousStripped;
+begin
+  Assert.IsFalse(TEnumHelper.TryStringToEnum<TTestAmbiguousStripped>('Foo', LValue, True));
+
+  Assert.IsTrue(TEnumHelper.TryStringToEnum<TTestAmbiguousStripped>('Bar', LValue, True));
+  Assert.AreEqual<TTestAmbiguousStripped>(abBar, LValue);
+
+  // Full names are never ambiguous
+  Assert.IsTrue(TEnumHelper.TryStringToEnum<TTestAmbiguousStripped>('cdFoo', LValue, True));
+  Assert.AreEqual<TTestAmbiguousStripped>(cdFoo, LValue);
+
+  LValue := abBar;
+
+  Assert.WillRaise(
+    procedure
+    begin
+      TEnumHelper.StringToEnum('Foo', LValue, True);
+    end,
+    EArgumentException);
+end;
+
+procedure TEnumHelperTryStringToEnumTests.StrippedCaseInsensitive;
+var
+  LValue: TTestColor;
+begin
+  Assert.IsTrue(TEnumHelper.TryStringToEnum<TTestColor>('YELLOW', LValue, True));
+  Assert.AreEqual<TTestColor>(tcYellow, LValue);
+end;
+
+procedure TEnumHelperTryStringToEnumTests.StrippedName;
+var
+  LValue: TTestBorderStyle;
+begin
+  LValue := bsNone;
+
+  TEnumHelper.StringToEnum('SizeToolWin', LValue, True);
+  Assert.AreEqual<TTestBorderStyle>(bsSizeToolWin, LValue);
+
+  // Round trip through EnumToString(..., True) now works
+  TEnumHelper.StringToEnum(TEnumHelper.EnumToString(bsDialog, True), LValue, True);
+  Assert.AreEqual<TTestBorderStyle>(bsDialog, LValue);
+end;
+
+procedure TEnumHelperTryStringToEnumTests.StrippedNameNeedsFlag;
+var
+  LValue: TTestColor;
+begin
+  Assert.IsFalse(TEnumHelper.TryStringToEnum<TTestColor>('Blue', LValue));
+  Assert.IsTrue(TEnumHelper.TryStringToEnum<TTestColor>('Blue', LValue, True));
+end;
+
+procedure TEnumHelperTryStringToEnumTests.StrippedOutsideSubRange;
+var
+  LValue: TTestColorSubRange;
+begin
+  Assert.IsFalse(TEnumHelper.TryStringToEnum<TTestColorSubRange>('Red', LValue, True));
+  Assert.IsTrue(TEnumHelper.TryStringToEnum<TTestColorSubRange>('Blue', LValue, True));
+  Assert.AreEqual<TTestColorSubRange>(tcBlue, LValue);
+end;
+
+procedure TEnumHelperTryStringToEnumTests.StrippedWithDef;
+begin
+  Assert.AreEqual<TTestColor>(tcBlack, TEnumHelper.StringToEnumDef('Black', tcRed, True));
+  Assert.AreEqual<TTestColor>(tcRed, TEnumHelper.StringToEnumDef('Black', tcRed));
+end;
+
+procedure TEnumHelperTryStringToEnumTests.TryInvalidReturnsFalseAndLow;
+var
+  LValue: TTestColor;
+begin
+  LValue := tcBlack;
+
+  Assert.IsFalse(TEnumHelper.TryStringToEnum<TTestColor>('NotAValue', LValue));
+  Assert.AreEqual<TTestColor>(tcRed, LValue);
+end;
+
+procedure TEnumHelperTryStringToEnumTests.TryNoRttiRaises;
+begin
+  Assert.WillRaise(
+    procedure
+    var
+      LValue: TEnumWithAssignedValues;
+    begin
+      TEnumHelper.TryStringToEnum<TEnumWithAssignedValues>('ewavFirst', LValue);
+    end,
+    ENotSupportedException);
+end;
+
+// Default(T) would be tcRed, which is not a value of the subrange
+procedure TEnumHelperTryStringToEnumTests.TrySubRangeInvalidGivesSubRangeLow;
+var
+  LValue: TTestColorSubRange;
+begin
+  Assert.IsFalse(TEnumHelper.TryStringToEnum<TTestColorSubRange>('tcRed', LValue));
+  Assert.AreEqual<TTestColorSubRange>(tcGreen, LValue);
+end;
+
+procedure TEnumHelperTryStringToEnumTests.TryValid;
+var
+  LValue: TTestColor;
+begin
+  Assert.IsTrue(TEnumHelper.TryStringToEnum<TTestColor>('tcYellow', LValue));
+  Assert.AreEqual<TTestColor>(tcYellow, LValue);
+
+  Assert.IsTrue(TEnumHelper.TryStringToEnum<TTestColor>('TTestColor.tcBlack', LValue));
+  Assert.AreEqual<TTestColor>(tcBlack, LValue);
+end;
+
+{ TEnumHelperSetTests }
+
+procedure TEnumHelperSetTests.ByteFullSetRoundTrip;
+var
+  LSet: TTestByteFullSet;
+begin
+  LSet := [e000, e128, e255];
+
+  Assert.AreEqual('e000,e128,e255', TEnumHelper.SetToString(LSet));
+  Assert.IsTrue(TEnumHelper.StringToSet<TTestByteFullSet>('e000,e128,e255') = LSet);
+end;
+
+procedure TEnumHelperSetTests.EmptySet;
+var
+  LSet: TTestColors;
+begin
+  LSet := [];
+
+  Assert.AreEqual('', TEnumHelper.SetToString(LSet));
+  Assert.AreEqual('[]', TEnumHelper.SetToString(LSet, True));
+  Assert.IsTrue(TEnumHelper.StringToSet<TTestColors>('') = []);
+  Assert.IsTrue(TEnumHelper.StringToSet<TTestColors>('[]') = []);
+end;
+
+procedure TEnumHelperSetTests.NoRttiElementsRaise;
+begin
+  Assert.WillRaise(
+    procedure
+    var
+      LSet: TEnumWithPositiveAssignedValuesSet;
+    begin
+      LSet := [ewpavOne];
+
+      TEnumHelper.SetToString(LSet);
+    end,
+    ENotSupportedException);
+
+  Assert.WillRaise(
+    procedure
+    begin
+      TEnumHelper.StringToSet<TEnumWithPositiveAssignedValuesSet>('ewpavOne');
+    end,
+    ENotSupportedException);
+end;
+
+procedure TEnumHelperSetTests.RoundTripAllSubsets;
+var
+  LBits: Integer;
+  LColor: TTestColor;
+  LSet: TTestColors;
+begin
+  for LBits := 0 to 31 do
+  begin
+    LSet := [];
+
+    for LColor := System.Low(TTestColor) to System.High(TTestColor) do
+      if LBits and (1 shl Ord(LColor)) <> 0 then
+        Include(LSet, LColor);
+
+    Assert.IsTrue(TEnumHelper.StringToSet<TTestColors>(TEnumHelper.SetToString(LSet)) = LSet);
+    Assert.IsTrue(TEnumHelper.StringToSet<TTestColors>(TEnumHelper.SetToString(LSet, True)) = LSet);
+  end;
+end;
+
+procedure TEnumHelperSetTests.SetToStringBrackets;
+begin
+  Assert.AreEqual('[tcRed,tcBlue]', TEnumHelper.SetToString<TTestColors>([tcRed, tcBlue], True));
+end;
+
+procedure TEnumHelperSetTests.SetToStringValues;
+begin
+  Assert.AreEqual('tcRed,tcBlue', TEnumHelper.SetToString<TTestColors>([tcBlue, tcRed]));
+  Assert.AreEqual('tcRed,tcGreen,tcBlue,tcYellow,tcBlack',
+    TEnumHelper.SetToString<TTestColors>([System.Low(TTestColor)..System.High(TTestColor)]));
+  Assert.AreEqual('tcGreen,tcYellow', TEnumHelper.SetToString<TTestColorSubRangeSet>([tcGreen, tcYellow]));
+end;
+
+procedure TEnumHelperSetTests.StringToSetCaseInsensitive;
+begin
+  Assert.IsTrue(TEnumHelper.StringToSet<TTestColors>('TCRED,tcblue') = [tcRed, tcBlue]);
+end;
+
+procedure TEnumHelperSetTests.StringToSetInvalidRaises;
+begin
+  Assert.WillRaiseWithMessage(
+    procedure
+    begin
+      TEnumHelper.StringToSet<TTestColors>('tcRed,tcPurple');
+    end,
+    EArgumentException,
+    '"tcRed,tcPurple" is not a valid value of TTestColors');
+end;
+
+procedure TEnumHelperSetTests.StringToSetSpacesAndBrackets;
+begin
+  Assert.IsTrue(TEnumHelper.StringToSet<TTestColors>('[tcRed, tcBlue]') = [tcRed, tcBlue]);
+  Assert.IsTrue(TEnumHelper.StringToSet<TTestColors>(' [ tcBlack ] ') = [tcBlack]);
+end;
+
+procedure TEnumHelperSetTests.SubRangeSetRejectsBaseTypeName;
+var
+  LSet: TTestColorSubRangeSet;
+begin
+  Assert.IsTrue(TEnumHelper.TryStringToSet<TTestColorSubRangeSet>('tcGreen,tcYellow', LSet));
+  Assert.IsTrue(LSet = [tcGreen, tcYellow]);
+
+  Assert.IsFalse(TEnumHelper.TryStringToSet<TTestColorSubRangeSet>('tcGreen,tcRed', LSet));
+end;
+
+// A real RTL set type: TShiftState from System.Classes
+procedure TEnumHelperSetTests.SystemShiftState;
+var
+  LShiftState: TShiftState;
+begin
+  LShiftState := [ssShift, ssCtrl];
+
+  Assert.AreEqual('ssShift,ssCtrl', TEnumHelper.SetToString(LShiftState));
+  Assert.IsTrue(TEnumHelper.StringToSet<TShiftState>('ssCtrl,ssShift') = LShiftState);
+end;
+
+procedure TEnumHelperSetTests.TryInvalidReturnsFalseAndEmpty;
+var
+  LSet: TTestColors;
+begin
+  LSet := [tcRed];
+
+  Assert.IsFalse(TEnumHelper.TryStringToSet<TTestColors>('tcRed,NotAValue', LSet));
+  Assert.IsTrue(LSet = []);
+end;
+
 {$IF DEFINED(DEBUG)}
   {$IFOPT C+}
 { TEnumHelperSanityCheckTests }
+
+procedure TEnumHelperSanityCheckTests.CountRejectsInteger;
+begin
+  Assert.WillRaise(
+    procedure
+    begin
+      TEnumHelper.Count<Integer>;
+    end,
+    EAssertionFailed);
+end;
+
+procedure TEnumHelperSanityCheckTests.SetToStringRejectsEnum;
+begin
+  Assert.WillRaise(
+    procedure
+    begin
+      TEnumHelper.SetToString(tcRed);
+    end,
+    EAssertionFailed);
+end;
 
 procedure TEnumHelperSanityCheckTests.EnumToIntRejectsInteger;
 begin
@@ -1774,6 +2600,13 @@ initialization
   TDUnitX.RegisterTestFixture(TEnumHelperIntegerInRangeTests);
   TDUnitX.RegisterTestFixture(TEnumHelperNextPreviousTests);
   TDUnitX.RegisterTestFixture(TEnumHelperPropertyTests);
+  TDUnitX.RegisterTestFixture(TEnumHelperCountNamesValuesTests);
+  TDUnitX.RegisterTestFixture(TEnumHelperTypeOnlyTests);
+  TDUnitX.RegisterTestFixture(TEnumHelperIntegerToEnumTests);
+  TDUnitX.RegisterTestFixture(TEnumHelperIsValidTests);
+  TDUnitX.RegisterTestFixture(TEnumHelperWrapTests);
+  TDUnitX.RegisterTestFixture(TEnumHelperTryStringToEnumTests);
+  TDUnitX.RegisterTestFixture(TEnumHelperSetTests);
   TDUnitX.RegisterTestFixture(TEnumHelperStringToEnumTests);
 {$IF DEFINED(DEBUG)}
   {$IFOPT C+}

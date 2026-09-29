@@ -40,7 +40,7 @@ var
 implementation
 
 uses
-  Delphi.EnumHelper;
+  Delphi.EnumHelper, System.UITypes;
 
 {$R *.dfm}
 
@@ -66,13 +66,10 @@ begin
   end;
 end;
 
-// Wraps around from the last value to the first one, NextValue itself stops at High
+// NextValueWrap continues from Low after High, NextValue would stop at High
 procedure TDEDemoMainForm.ButtonCycleAlignmentClick(Sender: TObject);
 begin
-  if MemoLog.Alignment = TEnumHelper.High(MemoLog.Alignment) then
-    MemoLog.Alignment := TEnumHelper.Low(MemoLog.Alignment)
-  else
-    MemoLog.Alignment := TEnumHelper.NextValue(MemoLog.Alignment);
+  MemoLog.Alignment := TEnumHelper.NextValueWrap(MemoLog.Alignment);
 
   SelectAlignmentInComboBox;
 
@@ -98,6 +95,22 @@ begin
   TEnumHelper.StringToEnum('bsSingle', LBorderstyleVariable);
 
   MemoLog.Lines.Add('TEnumHelper.StringToEnum(''bsSingle'', LBorderstyleVariable) = ' + TEnumHelper.EnumToString(LBorderstyleVariable));
+
+  TEnumHelper.StringToEnum('ToolWindow', LBorderstyleVariable, True);
+
+  MemoLog.Lines.Add('TEnumHelper.StringToEnum(''ToolWindow'', LBorderstyleVariable, True) = ' + TEnumHelper.EnumToString(LBorderstyleVariable));
+
+  // Type level, no value of the type needed
+  MemoLog.Lines.Add('TEnumHelper.Count<TFormBorderStyle> = ' + TEnumHelper.Count<TFormBorderStyle>.ToString);
+  MemoLog.Lines.Add('TEnumHelper.High<TFormBorderStyle> = ' + TEnumHelper.EnumToString(TEnumHelper.High<TFormBorderStyle>));
+  MemoLog.Lines.Add('TEnumHelper.Names<TFormBorderStyle>(True) = ' + string.Join(', ', TEnumHelper.Names<TFormBorderStyle>(True)));
+  MemoLog.Lines.Add('TEnumHelper.IntegerToEnum<TFormBorderStyle>(3) = ' + TEnumHelper.EnumToString(TEnumHelper.IntegerToEnum<TFormBorderStyle>(3)));
+
+  MemoLog.Lines.Add('TEnumHelper.IsValid(Self.BorderStyle) = ' + BoolToStr(TEnumHelper.IsValid(BorderStyle), True));
+  MemoLog.Lines.Add('TEnumHelper.NextValueWrap(bsSizeToolWin) = ' + TEnumHelper.EnumToString(TEnumHelper.NextValueWrap(bsSizeToolWin)));
+  MemoLog.Lines.Add('TEnumHelper.PreviousValueWrap(bsNone) = ' + TEnumHelper.EnumToString(TEnumHelper.PreviousValueWrap(bsNone)));
+
+  MemoLog.Lines.Add('TEnumHelper.SetToString(MemoLog.Font.Style, True) = ' + TEnumHelper.SetToString(MemoLog.Font.Style, True));
 end;
 
 // Check an integer (from a database, ini file etc.) before casting it to the enumeration
@@ -137,61 +150,48 @@ begin
   LogEnumValues(Position, 'TPosition');
 end;
 
-// Store enumerations by name, not by ordinal, so reordering the type does not break saved settings
+// Store enumerations and sets by name, not by ordinal, so reordering the type does not break saved settings.
+// StringToEnumDef gives the default for a missing or broken setting, instead of an exception.
 procedure TDEDemoMainForm.ButtonSaveAndLoadAsTextClick(Sender: TObject);
 var
   LSettings: TStringList;
   LAlignment: TAlignment;
   LBorderStyle: TFormBorderStyle;
+  LFontStyle: TFontStyles;
 begin
   LSettings := TStringList.Create;
   try
     LSettings.Values['BorderStyle'] := TEnumHelper.EnumToString(BorderStyle);
     LSettings.Values['Alignment'] := TEnumHelper.EnumToString(MemoLog.Alignment);
+    LSettings.Values['FontStyle'] := TEnumHelper.SetToString([fsBold, fsItalic]);
+    LSettings.Values['Position'] := 'poNotAValue';
 
     MemoLog.Lines.Add('Saved settings:');
     MemoLog.Lines.AddStrings(LSettings);
 
-    LBorderStyle := bsNone;
-    LAlignment := taLeftJustify;
-
-    TEnumHelper.StringToEnum(LSettings.Values['BorderStyle'], LBorderStyle);
-    TEnumHelper.StringToEnum(LSettings.Values['Alignment'], LAlignment);
+    LBorderStyle := TEnumHelper.StringToEnumDef(LSettings.Values['BorderStyle'], bsNone);
+    LAlignment := TEnumHelper.StringToEnumDef(LSettings.Values['Alignment'], taLeftJustify);
+    LFontStyle := TEnumHelper.StringToSet<TFontStyles>(LSettings.Values['FontStyle']);
 
     MemoLog.Lines.Add('Loaded: BorderStyle = ' + TEnumHelper.EnumToString(LBorderStyle) + ', Alignment = '
-      + TEnumHelper.EnumToString(LAlignment));
+      + TEnumHelper.EnumToString(LAlignment) + ', FontStyle = ' + TEnumHelper.SetToString(LFontStyle, True)
+      + ', Position = ' + TEnumHelper.EnumToString(TEnumHelper.StringToEnumDef(LSettings.Values['Position'], poDefault))
+      + ' (default, the saved value was broken)');
   finally
     LSettings.Free;
   end;
 end;
 
-// A property can't be passed as a var parameter, so go through a local variable
+// StringToEnumDef is a function, so unlike StringToEnum it can assign a property directly
 procedure TDEDemoMainForm.ComboBoxAlignmentChange(Sender: TObject);
-var
-  LAlignment: TAlignment;
 begin
-  LAlignment := MemoLog.Alignment;
-
-  TEnumHelper.StringToEnum(ComboBoxAlignment.Text, LAlignment);
-
-  MemoLog.Alignment := LAlignment;
+  MemoLog.Alignment := TEnumHelper.StringToEnumDef(ComboBoxAlignment.Text, MemoLog.Alignment);
 end;
 
 // Fill the combo box from the enumeration itself, so it follows if values are added
 procedure TDEDemoMainForm.FormCreate(Sender: TObject);
-var
-  LAlignment: TAlignment;
 begin
-  LAlignment := TEnumHelper.Low(MemoLog.Alignment);
-
-  ComboBoxAlignment.Items.Add(TEnumHelper.EnumToString(LAlignment));
-
-  while LAlignment <> TEnumHelper.High(LAlignment) do
-  begin
-    LAlignment := TEnumHelper.NextValue(LAlignment);
-
-    ComboBoxAlignment.Items.Add(TEnumHelper.EnumToString(LAlignment));
-  end;
+  ComboBoxAlignment.Items.AddStrings(TEnumHelper.Names<TAlignment>);
 
   SelectAlignmentInComboBox;
 end;
@@ -200,21 +200,12 @@ procedure TDEDemoMainForm.LogEnumValues<T>(const AEnumValue: T; const ACaption: 
 var
   LValue: T;
 begin
-  MemoLog.Lines.Add(Format('%s: %d values, current value %s', [ACaption,
-    TEnumHelper.HighAsInteger(AEnumValue) - TEnumHelper.LowAsInteger(AEnumValue) + 1, TEnumHelper.EnumToString(AEnumValue)]));
+  MemoLog.Lines.Add(Format('%s: %d values, current value %s', [ACaption, TEnumHelper.Count<T>,
+    TEnumHelper.EnumToString(AEnumValue)]));
 
-  LValue := TEnumHelper.Low(AEnumValue);
-
-  while True do
-  begin
+  for LValue in TEnumHelper.Values<T> do
     MemoLog.Lines.Add(Format('  %d = %s (%s)', [TEnumHelper.EnumToInt(LValue), TEnumHelper.EnumToString(LValue),
       TEnumHelper.EnumToString(LValue, True)]));
-
-    if TEnumHelper.EnumToInt(LValue) = TEnumHelper.HighAsInteger(LValue) then
-      Break;
-
-    LValue := TEnumHelper.NextValue(LValue);
-  end;
 end;
 
 procedure TDEDemoMainForm.SelectAlignmentInComboBox;

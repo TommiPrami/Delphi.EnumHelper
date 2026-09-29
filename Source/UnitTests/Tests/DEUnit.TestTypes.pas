@@ -79,6 +79,21 @@ type
 
   TEnumWithAssignedValues = (ewavFirst = -1, ewavSecond = 0, ewavThird = 1);
 
+  // A set can't hold negative values, so the no RTTI set test uses positive assigned values
+  TEnumWithPositiveAssignedValues = (ewpavOne = 1, ewpavThree = 3);
+
+  TEnumWithPositiveAssignedValuesSet = set of TEnumWithPositiveAssignedValues;
+
+  // Stripped names Foo, Foo and Bar: Foo is ambiguous, Bar is not
+  TTestAmbiguousStripped = (abFoo, cdFoo, abBar);
+
+  TTestColors = set of TTestColor;
+
+  TTestColorSubRangeSet = set of TTestColorSubRange;
+
+  // 256 elements, 32 bytes: larger than an Integer
+  TTestByteFullSet = set of TTestByteFull;
+
   // Enumeration properties defaulting like TForm does (BorderStyle = bsSizeable)
   TTestWindow = class(TPersistent)
   strict private
