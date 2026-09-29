@@ -77,6 +77,8 @@ type
     w294, w295, w296, w297, w298, w299
   );
 
+  TEnumWithAssignedValues = (ewavFirst = -1, ewavSecond = 0, ewavThird = 1);
+
   // Enumeration properties defaulting like TForm does (BorderStyle = bsSizeable)
   TTestWindow = class(TPersistent)
   strict private
@@ -89,6 +91,18 @@ type
     property Color: TTestColor read FColor write FColor default tcBlue;
   end;
 
+const
+  EXPECTED_VALIDATE_INTEGERS_LOG =
+    '-1 is not valid TTestBorderStyle' + sLineBreak +
+    '0 is valid TTestBorderStyle: bsNone' + sLineBreak +
+    '1 is valid TTestBorderStyle: bsSingle' + sLineBreak +
+    '2 is valid TTestBorderStyle: bsSizeable' + sLineBreak +
+    '3 is valid TTestBorderStyle: bsDialog' + sLineBreak +
+    '4 is valid TTestBorderStyle: bsToolWindow' + sLineBreak +
+    '5 is valid TTestBorderStyle: bsSizeToolWin' + sLineBreak +
+    '6 is not valid TTestBorderStyle' + sLineBreak +
+    '7 is not valid TTestBorderStyle' + sLineBreak;
+
 implementation
 
 { TTestWindow }
@@ -100,5 +114,6 @@ begin
   FBorderStyle := bsSizeable;
   FColor := tcBlue;
 end;
+
 
 end.

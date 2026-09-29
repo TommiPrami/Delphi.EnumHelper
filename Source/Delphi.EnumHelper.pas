@@ -14,6 +14,7 @@ interface
 type
   TEnumHelper = class
   protected
+    class procedure CheckHasTypeInfo<T>;
 {$IFDEF DEBUG_AND_ASSERTS}
     class procedure DoSanityCheck<T>(const AEnumValue: T);
 {$ENDIF}
@@ -35,6 +36,14 @@ implementation
 uses
   System.Character, System.Math, System.Rtti, System.SysUtils, System.TypInfo;
 
+// Enumerations with assigned values, like (eFirst = -1, eSecond = 5), have no RTTI and TypeInfo(T) is nil for them.
+// Without it there are no names nor bounds, and not even the sign of the ordinal is known.
+class procedure TEnumHelper.CheckHasTypeInfo<T>;
+begin
+  if not Assigned(TypeInfo(T)) then
+    raise ENotSupportedException.Create('Type has no RTTI: enumerations with assigned values are not supported');
+end;
+
 {$IFDEF DEBUG_AND_ASSERTS}
 class procedure TEnumHelper.DoSanityCheck<T>(const AEnumValue: T);
 begin
@@ -44,6 +53,8 @@ end;
 
 class function TEnumHelper.EnumToInt<T>(const AEnumValue: T): Integer;
 begin
+  CheckHasTypeInfo<T>;
+
 {$IFDEF DEBUG_AND_ASSERTS}
   DoSanityCheck(AEnumValue);
 {$ENDIF}
@@ -54,6 +65,8 @@ end;
 
 class function TEnumHelper.EnumToString<T>(const AEnumValue: T; const AStripLowercasePrefix: Boolean = False): string;
 begin
+  CheckHasTypeInfo<T>;
+
 {$IFDEF DEBUG_AND_ASSERTS}
   DoSanityCheck(AEnumValue);
 {$ENDIF}
@@ -80,6 +93,8 @@ var
   LEnumValue: Integer;
   PEnumTemp: Pointer;
 begin
+  CheckHasTypeInfo<T>;
+
 {$IFDEF DEBUG_AND_ASSERTS}
   DoSanityCheck(AEnumValue);
 {$ENDIF}
@@ -103,6 +118,8 @@ var
   LTypeData: PTypeData;
   LIntValue: Integer;
 begin
+  CheckHasTypeInfo<T>;
+
 {$IFDEF DEBUG_AND_ASSERTS}
   DoSanityCheck(AEnumValue);
 {$ENDIF}
@@ -121,6 +138,8 @@ var
   LTypeData: PTypeData;
   LIntValue: Integer;
 begin
+  CheckHasTypeInfo<T>;
+
 {$IFDEF DEBUG_AND_ASSERTS}
   DoSanityCheck(AEnumValue);
 {$ENDIF}
@@ -136,6 +155,8 @@ class function TEnumHelper.High<T>(const AEnumValue: T): T;
 var
   LValueOfEnum: TValue;
 begin
+  CheckHasTypeInfo<T>;
+
 {$IFDEF DEBUG_AND_ASSERTS}
   DoSanityCheck(AEnumValue);
 {$ENDIF}
@@ -149,6 +170,8 @@ class function TEnumHelper.Low<T>(const AEnumValue: T): T;
 var
   LValueOfEnum: TValue;
 begin
+  CheckHasTypeInfo<T>;
+
 {$IFDEF DEBUG_AND_ASSERTS}
   DoSanityCheck(AEnumValue);
 {$ENDIF}
@@ -162,6 +185,8 @@ class function TEnumHelper.HighAsInteger<T>(const AEnumValue: T): Integer;
 var
   LValueOfEnum: TValue;
 begin
+  CheckHasTypeInfo<T>;
+
 {$IFDEF DEBUG_AND_ASSERTS}
   DoSanityCheck(AEnumValue);
 {$ENDIF}
@@ -179,6 +204,8 @@ class function TEnumHelper.LowAsInteger<T>(const AEnumValue: T): Integer;
 var
   LValueOfEnum: TValue;
 begin
+  CheckHasTypeInfo<T>;
+
 {$IFDEF DEBUG_AND_ASSERTS}
   DoSanityCheck(AEnumValue);
 {$ENDIF}

@@ -6,6 +6,36 @@ uses
   DUnitX.TestFramework, DEUnit.TestTypes;
 
 type
+  // Enumerations with assigned values have no RTTI, every method raises ENotSupportedException instead of an AV
+  [TestFixture]
+  TEnumHelperAssignedValuesTests = class
+  public
+    [Test]
+    procedure EnumToIntRaises;
+    [Test]
+    procedure EnumToStringRaises;
+    [Test]
+    procedure HighAsIntegerRaises;
+    [Test]
+    procedure HighRaises;
+    [Test]
+    procedure IntegerInRangeRaises;
+    [Test]
+    procedure LowAsIntegerRaises;
+    [Test]
+    procedure LowRaises;
+    [Test]
+    procedure NextValueRaises;
+    [Test]
+    procedure PreviousValueRaises;
+    [Test]
+    procedure StorageIsSignedByte;
+    [Test]
+    procedure StringToEnumKeepsValue;
+    [Test]
+    procedure StringToEnumRaises;
+  end;
+
   // Same calls the demo app makes, against the default TForm.BorderStyle (bsSizeable) held in a local variable
   [TestFixture]
   TEnumHelperDemoTests = class
@@ -32,6 +62,10 @@ type
     procedure DemoPreviousValue;
     [Test]
     procedure DemoStringToEnum;
+    [Test]
+    procedure DemoValidateIntegers;
+    [Test]
+    procedure DemoValidateIntegersFromProperty;
   end;
 
   [TestFixture]
@@ -307,7 +341,29 @@ type
 implementation
 
 uses
-  System.Rtti, System.SysUtils, System.TypInfo, Delphi.EnumHelper;
+  System.Classes, System.Rtti, System.SysUtils, System.TypInfo, Delphi.EnumHelper;
+
+// Same code as TDEDemoMainForm.ButtonIntegerInRangeClick, lines collected into a string instead of the memo
+function ValidateIntegersLog(const ABorderStyle: TTestBorderStyle): string;
+var
+  LLines: TStringList;
+  LStoredValue: Integer;
+begin
+  LLines := TStringList.Create;
+  try
+    for LStoredValue := -1 to 7 do
+      if TEnumHelper.IntegerInRange(ABorderStyle, LStoredValue) then
+        LLines.Add(Format('%d is valid TTestBorderStyle: %s', [LStoredValue,
+          TEnumHelper.EnumToString(TTestBorderStyle(LStoredValue))]))
+      else
+        LLines.Add(Format('%d is not valid TTestBorderStyle', [LStoredValue]));
+
+    Result := LLines.Text;
+  finally
+    LLines.Free;
+  end;
+end;
+
 
 type
   // Generic checks run against every test enumeration
@@ -431,6 +487,137 @@ begin
   Assert.AreEqual(LHigh, TEnumHelper.EnumToInt<T>(LValue));
 end;
 
+{ TEnumHelperAssignedValuesTests }
+
+procedure TEnumHelperAssignedValuesTests.EnumToIntRaises;
+begin
+  Assert.WillRaise(
+    procedure
+    begin
+      TEnumHelper.EnumToInt(ewavFirst);
+    end,
+    ENotSupportedException);
+end;
+
+procedure TEnumHelperAssignedValuesTests.EnumToStringRaises;
+begin
+  Assert.WillRaise(
+    procedure
+    begin
+      TEnumHelper.EnumToString(ewavSecond);
+    end,
+    ENotSupportedException);
+end;
+
+procedure TEnumHelperAssignedValuesTests.HighAsIntegerRaises;
+begin
+  Assert.WillRaise(
+    procedure
+    begin
+      TEnumHelper.HighAsInteger(ewavSecond);
+    end,
+    ENotSupportedException);
+end;
+
+procedure TEnumHelperAssignedValuesTests.HighRaises;
+begin
+  Assert.WillRaise(
+    procedure
+    begin
+      TEnumHelper.High(ewavSecond);
+    end,
+    ENotSupportedException);
+end;
+
+procedure TEnumHelperAssignedValuesTests.IntegerInRangeRaises;
+begin
+  Assert.WillRaise(
+    procedure
+    begin
+      TEnumHelper.IntegerInRange(ewavSecond, -1);
+    end,
+    ENotSupportedException);
+end;
+
+procedure TEnumHelperAssignedValuesTests.LowAsIntegerRaises;
+begin
+  Assert.WillRaise(
+    procedure
+    begin
+      TEnumHelper.LowAsInteger(ewavSecond);
+    end,
+    ENotSupportedException);
+end;
+
+procedure TEnumHelperAssignedValuesTests.LowRaises;
+begin
+  Assert.WillRaise(
+    procedure
+    begin
+      TEnumHelper.Low(ewavSecond);
+    end,
+    ENotSupportedException);
+end;
+
+procedure TEnumHelperAssignedValuesTests.NextValueRaises;
+begin
+  Assert.WillRaise(
+    procedure
+    begin
+      TEnumHelper.NextValue(ewavSecond);
+    end,
+    ENotSupportedException);
+end;
+
+procedure TEnumHelperAssignedValuesTests.PreviousValueRaises;
+begin
+  Assert.WillRaise(
+    procedure
+    begin
+      TEnumHelper.PreviousValue(ewavSecond);
+    end,
+    ENotSupportedException);
+end;
+
+// Guards the premise: -1 is stored in one signed byte, so copying it into an Integer would give 255, not -1
+procedure TEnumHelperAssignedValuesTests.StorageIsSignedByte;
+begin
+  Assert.AreEqual(1, Integer(SizeOf(TEnumWithAssignedValues)));
+  Assert.AreEqual(-1, Integer(Ord(ewavFirst)));
+  Assert.AreEqual(1, Integer(Ord(ewavThird)));
+end;
+
+procedure TEnumHelperAssignedValuesTests.StringToEnumKeepsValue;
+var
+  LValue: TEnumWithAssignedValues;
+begin
+  LValue := ewavThird;
+
+  try
+    TEnumHelper.StringToEnum('ewavFirst', LValue);
+  except
+    on ENotSupportedException do;
+  end;
+
+  // Assert.AreEqual<T> needs RTTI for its comparer, so compare the ordinals
+  Assert.AreEqual(Integer(Ord(ewavThird)), Integer(Ord(LValue)));
+end;
+
+procedure TEnumHelperAssignedValuesTests.StringToEnumRaises;
+var
+  LValue: TEnumWithAssignedValues;
+begin
+  LValue := ewavSecond;
+
+  Assert.WillRaiseWithMessage(
+    procedure
+    begin
+      TEnumHelper.StringToEnum('ewavFirst', LValue);
+    end,
+    ENotSupportedException,
+    'Type has no RTTI: enumerations with assigned values are not supported');
+end;
+
 { TEnumHelperDemoTests }
 
 procedure TEnumHelperDemoTests.DemoEnumToInt;
@@ -501,6 +688,29 @@ begin
   TEnumHelper.StringToEnum('bsSingle', LBorderstyleVariable);
 
   Assert.AreEqual<TTestBorderStyle>(bsSingle, LBorderstyleVariable);
+end;
+
+// Demo "Validate integers" button, the one that hit the access violation in the IDE
+procedure TEnumHelperDemoTests.DemoValidateIntegers;
+var
+  LBorderStyle: TTestBorderStyle;
+begin
+  LBorderStyle := bsSizeable;
+
+  Assert.AreEqual(EXPECTED_VALIDATE_INTEGERS_LOG, ValidateIntegersLog(LBorderStyle));
+end;
+
+// Same as DemoValidateIntegers, but the enumeration comes from a property like Self.BorderStyle in the demo form
+procedure TEnumHelperDemoTests.DemoValidateIntegersFromProperty;
+var
+  LWindow: TTestWindow;
+begin
+  LWindow := TTestWindow.Create;
+  try
+    Assert.AreEqual(EXPECTED_VALIDATE_INTEGERS_LOG, ValidateIntegersLog(LWindow.BorderStyle));
+  finally
+    LWindow.Free;
+  end;
 end;
 
 { TEnumHelperEnumToIntTests }
@@ -1556,6 +1766,7 @@ end;
 {$ENDIF}
 
 initialization
+  TDUnitX.RegisterTestFixture(TEnumHelperAssignedValuesTests);
   TDUnitX.RegisterTestFixture(TEnumHelperDemoTests);
   TDUnitX.RegisterTestFixture(TEnumHelperEnumToIntTests);
   TDUnitX.RegisterTestFixture(TEnumHelperEnumToStringTests);
