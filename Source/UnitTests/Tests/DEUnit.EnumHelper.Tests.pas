@@ -760,7 +760,10 @@ begin
   try
     TEnumHelper.StringToEnum('ewavFirst', LValue);
   except
-    on ENotSupportedException do;
+    on ENotSupportedException do
+    begin
+      // 
+    end;;
   end;
 
   // Assert.AreEqual<T> needs RTTI for its comparer, so compare the ordinals
@@ -1191,19 +1194,28 @@ begin
   try
     TEnumHelper.StringToEnum('NotAValue', LByteValue);
   except
-    on EArgumentException do;
+    on EArgumentException do
+    begin
+      // 
+    end;
   end;
 
   try
     TEnumHelper.StringToEnum('NotAValue', LFourByteValue);
   except
-    on EArgumentException do;
+    on EArgumentException do
+    begin
+      // 
+    end;
   end;
 
   try
     TEnumHelper.StringToEnum('NotAValue', LWordValue);
   except
-    on EArgumentException do;
+    on EArgumentException do
+    begin
+      // 
+    end;
   end;
 
   Assert.AreEqual<TTestColor>(tcYellow, LByteValue);
@@ -1788,7 +1800,10 @@ begin
 
     FWindow.BorderStyle := LBorderStyle;
   except
-    on EArgumentException do;
+    on EArgumentException do
+    begin
+      // 
+    end;
   end;
 
   Assert.AreEqual<TTestBorderStyle>(bsSizeable, FWindow.BorderStyle);
