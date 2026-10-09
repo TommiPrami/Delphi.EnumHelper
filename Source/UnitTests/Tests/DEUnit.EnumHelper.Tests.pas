@@ -763,7 +763,7 @@ begin
     on ENotSupportedException do
     begin
       // 
-    end;;
+    end;
   end;
 
   // Assert.AreEqual<T> needs RTTI for its comparer, so compare the ordinals
